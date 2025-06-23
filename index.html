@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lap Ai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'light-bg': '#FFFFFF',
+                        'dark-bg': '#181818'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .message-content {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #6B7280;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message-bubble {
+            max-width: 85%;
+            word-break: break-word;
+        }
+        
+        @media (max-width: 640px) {
+            .message-bubble {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div id="app" class="flex flex-col h-screen max-w-4xl mx-auto border-x border-gray-200 dark:border-gray-700">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary to-purple-600 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">L</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-semibold">Lap Ai</h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Powered by Gemini</p>
+                </div>
+            </div>
+            <button id="clearChat" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Chat Messages -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                <div class="w-16 h-16 bg-gradient-to-r from-primary to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-white font-bold text-2xl">L</span>
+                </div>
+                <p class="text-lg font-medium mb-2">Welcome to Lap Ai</p>
+                <p class="text-sm">Start a conversation with your AI assistant</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex space-x-3">
+                <div class="flex-1 relative">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type your message..." 
+                        class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-h-[48px] max-h-32"
+                        rows="1"></textarea>
+                </div>
+                <button 
+                    id="sendButton" 
+                    class="bg-primary hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center min-w-[48px] disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM elements
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const clearChatButton = document.getElementById('clearChat');
+
+        let conversationHistory = [];
+        let isProcessing = false;
+
+        // Gemini API configuration
+        const GEMINI_API_KEY = 'AIzaSyDnT9oufpmlwQaxv1OSd8sNyXZhSLEYP70';
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        // Call Gemini API directly
+        async function callGeminiAPI(message, messageId) {
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                parts: [
+                                    {
+                                        text: message
+                                    }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 1024,
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                    const aiResponse = data.candidates[0].content.parts[0].text;
+                    displayAIResponse(messageId, aiResponse);
+                    conversationHistory.push({ role: 'assistant', content: aiResponse });
+                } else {
+                    throw new Error('Invalid response format from Gemini API');
+                }
+            } catch (error) {
+                console.error('Gemini API Error:', error);
+                displayAIResponse(messageId, `Error: ${error.message}`, true);
+            } finally {
+                isProcessing = false;
+                updateSendButton();
+            }
+        }
+
+        // Display AI response in chat
+        function displayAIResponse(messageId, content, isError = false) {
+            const messageElement = document.getElementById(messageId);
+            if (!messageElement) return;
+
+            const contentElement = messageElement.querySelector('.ai-content');
+            const typingElement = messageElement.querySelector('.typing-indicator');
+            
+            if (typingElement) typingElement.style.display = 'none';
+            
+            if (isError) {
+                contentElement.innerHTML = `<span class="text-red-500">${content}</span>`;
+            } else {
+                contentElement.innerHTML = formatMessage(content);
+            }
+        }
+
+        // Format message content (basic markdown support)
+        function formatMessage(content) {
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Add message to chat
+        function addMessage(content, isUser = false, messageId = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} fade-in`;
+            if (messageId) messageDiv.id = messageId;
+
+            const bubbleClass = isUser 
+                ? 'bg-primary text-white' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100';
+
+            messageDiv.innerHTML = `
+                <div class="message-bubble ${bubbleClass} rounded-lg px-4 py-3">
+                    ${isUser ? `<div class="message-content">${formatMessage(content)}</div>` : `
+                        <div class="ai-content">${content}</div>
+                        <div class="typing-indicator mt-2" style="display: ${content === '' ? 'flex' : 'none'};">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    `}
+                </div>
+            `;
+
+            // Remove welcome message if it exists
+            const welcomeMessage = chatContainer.querySelector('.text-center');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv;
+        }
+
+        // Send message
+        async function sendMessage() {
+            const content = messageInput.value.trim();
+            if (!content || isProcessing) return;
+
+            isProcessing = true;
+            updateSendButton();
+
+            // Add user message
+            addMessage(content, true);
+            conversationHistory.push({ role: 'user', content: content });
+
+            // Clear input
+            messageInput.value = '';
+            autoResize();
+
+            // Add AI response placeholder
+            const messageId = 'msg-' + Date.now();
+            addMessage('', false, messageId);
+
+            // Call Gemini API directly
+            await callGeminiAPI(content, messageId);
+        }
+
+        // Update send button state
+        function updateSendButton() {
+            sendButton.disabled = isProcessing;
+            if (isProcessing) {
+                sendButton.innerHTML = `
+                    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                `;
+            } else {
+                sendButton.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                `;
+            }
+        }
+
+        // Auto-resize textarea
+        function autoResize() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 128) + 'px';
+        }
+
+        // Clear chat
+        function clearChat() {
+            conversationHistory = [];
+            chatContainer.innerHTML = `
+                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <div class="w-16 h-16 bg-gradient-to-r from-primary to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-white font-bold text-2xl">L</span>
+                    </div>
+                    <p class="text-lg font-medium mb-2">Welcome to Lap Ai</p>
+                    <p class="text-sm">Start a conversation with your AI assistant</p>
+                </div>
+            `;
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        clearChatButton.addEventListener('click', clearChat);
+
+        messageInput.addEventListener('input', autoResize);
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initialize
+        autoResize();
+    </script>
+</body>
+</html>
